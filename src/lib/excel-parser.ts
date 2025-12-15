@@ -231,17 +231,17 @@ export function validateCityData(data: CityData[]): { isValid: boolean; errors: 
       errors.push(`第${rowNum}行: 年份缺失或格式错误`)
     }
 
-    const base_min = parseFloat(row.base_min)
+    const base_min = parseFloat(String(row.base_min || '0'))
     if (isNaN(base_min) || base_min <= 0) {
       errors.push(`第${rowNum}行: 基数下限必须是正数`)
     }
 
-    const base_max = parseFloat(row.base_max)
+    const base_max = parseFloat(String(row.base_max || '0'))
     if (isNaN(base_max) || base_max <= 0) {
       errors.push(`第${rowNum}行: 基数上限必须是正数`)
     }
 
-    const rate = parseFloat(row.rate)
+    const rate = parseFloat(String(row.rate || '0'))
     if (isNaN(rate) || rate <= 0 || rate > 1) {
       errors.push(`第${rowNum}行: 费率必须是0到1之间的数字`)
     }
