@@ -23,7 +23,8 @@ export async function calculateContributions(cityName: string): Promise<{
 
   try {
     // 2. 获取城市社保标准
-    const cityResponse = await fetch('/api/cities/query', {
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+    const cityResponse = await fetch(`${baseUrl}/api/cities/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,7 +44,7 @@ export async function calculateContributions(cityName: string): Promise<{
     const cityStandard = cityResult.data[0] // 取第一条数据
 
     // 3. 获取所有工资数据
-    const salariesResponse = await fetch('/api/salaries')
+    const salariesResponse = await fetch(`${baseUrl}/api/salaries`)
     if (!salariesResponse.ok) {
       throw new Error('获取工资数据失败')
     }
