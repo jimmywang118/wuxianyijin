@@ -1,10 +1,102 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import FileUpload from '@/components/FileUpload'
+import { parseCitiesExcel, parseSalariesExcel, validateCityData, validateSalaryData } from '@/lib/excel-parser'
+import { uploadCitiesData, uploadSalariesData, getCitiesList, getSalariesCount } from '@/lib/data-service'
 
 export default function UploadPage() {
   const [activeTab, setActiveTab] = useState<'cities' | 'salaries'>('cities')
+  const [cities, setCities] = useState<any[]>([])
+  const [salariesCount, setSalariesCount] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      const citiesResult = await getCitiesList()
+      if (citiesResult.success) {
+        setCities(citiesResult.data)
+      }
+
+      const salariesResult = await getSalariesCount()
+      if (salariesResult.success) {
+        setSalariesCount(salariesResult.count)
+      }
+    } catch (error) {
+      console.error('加载数据失败:', error)
+    }
+  }
+
+  const showMessage = (type: 'success' | 'error', text: string) => {
+    setMessage({ type, text })
+    setTimeout(() => setMessage(null), 5000)
+  }
+
+  const handleCitiesFileUpload = async (file: File) => {
+    setIsLoading(true)
+    setMessage(null)
+
+    try {
+      // 解析Excel文件
+      const data = await parseCitiesExcel(file)
+
+      // 验证数据
+      const validation = validateCityData(data)
+      if (!validation.isValid) {
+        showMessage('error', `数据验证失败：\n${validation.errors.join('\n')}`)
+        return
+      }
+
+      // 上传数据
+      const result = await uploadCitiesData(data)
+      if (result.success) {
+        showMessage('success', `成功上传 ${result.count} 条城市数据`)
+        await loadData() // 重新加载数据
+      } else {
+        showMessage('error', `上传失败：${result.error}`)
+      }
+    } catch (error) {
+      showMessage('error', error instanceof Error ? error.message : '上传失败')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSalariesFileUpload = async (file: File) => {
+    setIsLoading(true)
+    setMessage(null)
+
+    try {
+      // 解析Excel文件
+      const data = await parseSalariesExcel(file)
+
+      // 验证数据
+      const validation = validateSalaryData(data)
+      if (!validation.isValid) {
+        showMessage('error', `数据验证失败：\n${validation.errors.join('\n')}`)
+        return
+      }
+
+      // 上传数据
+      const result = await uploadSalariesData(data)
+      if (result.success) {
+        showMessage('success', `成功上传 ${result.count} 条工资数据`)
+        await loadData() // 重新加载数据
+      } else {
+        showMessage('error', `上传失败：${result.error}`)
+      }
+    } catch (error) {
+      showMessage('error', error instanceof Error ? error.message : '上传失败')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -17,6 +109,17 @@ export default function UploadPage() {
           <h1 className="text-3xl font-bold text-gray-900">数据管理</h1>
           <p className="mt-2 text-gray-600">上传城市社保标准和员工工资数据</p>
         </div>
+
+        {/* Message */}
+        {message && (
+          <div className={`mb-4 p-4 rounded-md ${
+            message.type === 'success'
+              ? 'bg-green-50 text-green-800 border border-green-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+            <p className="text-sm whitespace-pre-line">{message.text}</p>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mb-6">
@@ -50,18 +153,36 @@ export default function UploadPage() {
         {activeTab === 'cities' ? (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">城市社保标准数据</h2>
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="mt-2 text-sm text-gray-600">点击上传或拖拽文件到此处</p>
-                <p className="text-xs text-gray-500 mt-1">支持 .xlsx 格式</p>
-                <input type="file" className="hidden" accept=".xlsx" />
+
+            {/* Current Cities List */}
+            {cities.length > 0 && (
+              <div className="mb-6 p-4 bg-gray-50 rounded">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">当前已导入的城市：</h3>
+                <div className="flex flex-wrap gap-2">
+                  {cities.map((city, index) => (
+                    <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      {city.city_name} ({city.year})
+                    </span>
+                  ))}
+                </div>
               </div>
+            )}
+
+            <div className="space-y-4">
+              <FileUpload
+                onFileSelect={handleCitiesFileUpload}
+                accept=".xlsx"
+                title={isLoading ? "正在处理..." : "点击上传或拖拽文件到此处"}
+                description="支持 .xlsx 格式"
+              />
               <div className="bg-blue-50 p-4 rounded">
                 <p className="text-sm text-blue-800">
-                  <strong>格式说明：</strong>Excel文件应包含城市名称、年份、缴费基数下限、基数上限和费率等字段
+                  <strong>格式说明：</strong>Excel文件应包含以下字段：
+                  <br />• city_name 或 city_namte (城市名称)
+                  <br />• year (年份)
+                  <br />• base_min (缴费基数下限)
+                  <br />• base_max (缴费基数上限)
+                  <br />• rate (综合缴纳比例)
                 </p>
               </div>
             </div>
@@ -69,18 +190,30 @@ export default function UploadPage() {
         ) : (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">员工工资数据</h2>
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="mt-2 text-sm text-gray-600">点击上传或拖拽文件到此处</p>
-                <p className="text-xs text-gray-500 mt-1">支持 .xlsx 格式</p>
-                <input type="file" className="hidden" accept=".xlsx" />
+
+            {/* Current Salaries Count */}
+            {salariesCount !== null && salariesCount > 0 && (
+              <div className="mb-6 p-4 bg-gray-50 rounded">
+                <p className="text-sm text-gray-700">
+                  当前已导入 <span className="font-semibold">{salariesCount}</span> 条工资数据
+                </p>
               </div>
+            )}
+
+            <div className="space-y-4">
+              <FileUpload
+                onFileSelect={handleSalariesFileUpload}
+                accept=".xlsx"
+                title={isLoading ? "正在处理..." : "点击上传或拖拽文件到此处"}
+                description="支持 .xlsx 格式"
+              />
               <div className="bg-blue-50 p-4 rounded">
                 <p className="text-sm text-blue-800">
-                  <strong>格式说明：</strong>Excel文件应包含员工工号、姓名、月份（YYYYMM格式）和工资金额等字段
+                  <strong>格式说明：</strong>Excel文件应包含以下字段：
+                  <br />• employee_id (员工工号)
+                  <br />• employee_name (员工姓名)
+                  <br />• month (年份月份，格式：YYYYMM)
+                  <br />• salary_amount (工资金额)
                 </p>
               </div>
             </div>
@@ -96,14 +229,27 @@ export default function UploadPage() {
                 选择城市
               </label>
               <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">请先上传城市数据</option>
+                {cities.length > 0 ? (
+                  <>
+                    <option value="">请选择城市</option>
+                    {cities.map((city, index) => (
+                      <option key={index} value={city.city_name}>
+                        {city.city_name} ({city.year})
+                      </option>
+                    ))}
+                  </>
+                ) : (
+                  <option value="">请先上传城市数据</option>
+                )}
               </select>
             </div>
             <button
-              disabled
-              className="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded-md cursor-not-allowed"
+              disabled={cities.length === 0 || salariesCount === 0}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
             >
-              请先上传数据
+              {cities.length === 0 ? '请先上传城市数据' :
+               salariesCount === 0 ? '请先上传工资数据' :
+               '执行计算'}
             </button>
           </div>
         </div>
