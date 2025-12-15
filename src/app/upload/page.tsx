@@ -266,7 +266,7 @@ export default function UploadPage() {
               <div className="bg-blue-50 p-4 rounded">
                 <p className="text-sm text-blue-800">
                   <strong>格式说明：</strong>Excel文件应包含以下字段：
-                  <br />• city_name 或 city_namte (城市名称)
+                  <br />• city_name (城市名称)
                   <br />• year (年份)
                   <br />• base_min (缴费基数下限)
                   <br />• base_max (缴费基数上限)
