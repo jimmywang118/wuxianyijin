@@ -1,4 +1,5 @@
 import { generateBatchId } from './utils'
+import { createClient } from '@supabase/supabase-js'
 
 export interface CalculationResult {
   employee_name: string
@@ -21,34 +22,40 @@ export async function calculateContributions(cityName: string): Promise<{
   // 1. 生成唯一的批次ID
   const batchId = generateBatchId()
 
+  // 创建 Supabase 客户端
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+
   try {
     // 2. 获取城市社保标准
-    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') || 'http://localhost:3000'
-    const cityResponse = await fetch(`${baseUrl}/api/cities/query`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cityName }),
-    })
+    const { data: cityData, error: cityError } = await supabaseAdmin
+      .from('cities')
+      .select('*')
+      .eq('city_name', cityName)
+      .order('year', { ascending: false })
+      .limit(1)
 
-    if (!cityResponse.ok) {
+    if (cityError) {
+      console.error('查询城市数据失败:', cityError)
       throw new Error('获取城市数据失败')
     }
-    const cityResult = await cityResponse.json()
 
-    if (!cityResult.success || !cityResult.data || cityResult.data.length === 0) {
+    if (!cityData || cityData.length === 0) {
       throw new Error(`未找到城市 ${cityName} 的社保标准数据`)
     }
 
-    const cityStandard = cityResult.data[0] // 取第一条数据
+    const cityStandard = cityData[0] // 取第一条数据
 
     // 3. 获取所有工资数据
-    const salariesResponse = await fetch(`${baseUrl}/api/salaries`)
-    if (!salariesResponse.ok) {
+    const { data: salariesData, error: salariesError } = await supabaseAdmin
+      .from('salaries')
+      .select('*')
+
+    if (salariesError) {
+      console.error('查询工资数据失败:', salariesError)
       throw new Error('获取工资数据失败')
     }
-    const salariesData = await salariesResponse.json()
 
     if (!salariesData || salariesData.length === 0) {
       throw new Error('工资数据为空，请先上传工资数据')

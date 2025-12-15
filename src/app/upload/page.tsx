@@ -207,25 +207,7 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Debug Info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-sm text-yellow-800">
-              调试信息：
-              <br />- 城市数据：{cities.length} 条
-              <br />- 工资数据：{salariesCount ?? 0} 条
-              <br />- SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '已配置' : '未配置'}
-              <br />- SERVICE_ROLE_KEY: 服务端密钥（不在客户端显示）
-            </p>
-            <button
-              onClick={loadData}
-              className="mt-2 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
-            >
-              重新加载数据
-            </button>
-          </div>
-        )}
-
+        
         {/* Tabs */}
         <div className="mb-6">
           <div className="border-b border-gray-200">
