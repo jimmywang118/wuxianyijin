@@ -28,10 +28,11 @@ export default function UploadPage() {
 
       const citiesResult = await getCitiesList()
       console.log('城市数据结果:', citiesResult)
-      if (citiesResult.success) {
+      if (citiesResult.success && citiesResult.data) {
         setCities(citiesResult.data)
         console.log('加载了', citiesResult.data.length, '个城市')
       } else {
+        setCities([])
         console.error('加载城市数据失败:', citiesResult.error)
       }
 
