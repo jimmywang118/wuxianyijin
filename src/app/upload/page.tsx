@@ -24,6 +24,8 @@ export default function UploadPage() {
   const loadData = async () => {
     try {
       console.log('开始加载数据...')
+      console.log('环境变量 NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '已配置' : '未配置')
+
       const citiesResult = await getCitiesList()
       console.log('城市数据结果:', citiesResult)
       if (citiesResult.success) {
@@ -213,7 +215,7 @@ export default function UploadPage() {
               <br />- 城市数据：{cities.length} 条
               <br />- 工资数据：{salariesCount ?? 0} 条
               <br />- SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '已配置' : '未配置'}
-              <br />- SERVICE_ROLE_KEY: {process.env.SUPABASE_SERVICE_ROLE_KEY ? '已配置' : '未配置'}
+              <br />- SERVICE_ROLE_KEY: 服务端密钥（不在客户端显示）
             </p>
             <button
               onClick={loadData}
