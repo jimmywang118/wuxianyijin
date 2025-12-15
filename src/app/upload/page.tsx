@@ -38,10 +38,11 @@ export default function UploadPage() {
 
       const salariesResult = await getSalariesCount()
       console.log('工资数据结果:', salariesResult)
-      if (salariesResult.success) {
+      if (salariesResult.success && salariesResult.count !== undefined) {
         setSalariesCount(salariesResult.count)
         console.log('工资数据条数:', salariesResult.count)
       } else {
+        setSalariesCount(0)
         console.error('加载工资数据失败:', salariesResult.error)
       }
     } catch (error) {
