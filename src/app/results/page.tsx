@@ -83,7 +83,7 @@ export default function ResultsPage() {
     if (!batchInfo || results.length === 0) return
 
     // 准备导出数据
-    const exportData = results.map(result => ({
+    const exportData: { [key: string]: string | number | null }[] = results.map(result => ({
       '员工姓名': result.employee_name,
       '平均工资': result.avg_salary,
       '缴费基数': result.contribution_base,
@@ -95,8 +95,8 @@ export default function ResultsPage() {
     // 添加汇总信息
     exportData.push({
       '员工姓名': '总计',
-      '平均工资': '',
-      '缴费基数': '',
+      '平均工资': null,
+      '缴费基数': null,
       '公司应缴金额': batchInfo.total_company_fee,
       '城市': batchInfo.city_name,
       '计算日期': new Date(batchInfo.created_at).toLocaleDateString()
