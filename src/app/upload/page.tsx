@@ -43,25 +43,34 @@ export default function UploadPage() {
     setMessage(null)
 
     try {
+      console.log('开始处理城市文件:', file.name)
+
       // 解析Excel文件
       const data = await parseCitiesExcel(file)
+      console.log('解析到的数据:', data)
 
       // 验证数据
       const validation = validateCityData(data)
       if (!validation.isValid) {
+        console.error('数据验证失败:', validation.errors)
         showMessage('error', `数据验证失败：\n${validation.errors.join('\n')}`)
         return
       }
 
       // 上传数据
+      console.log('开始上传数据，条数:', data.length)
       const result = await uploadCitiesData(data)
+      console.log('上传结果:', result)
+
       if (result.success) {
         showMessage('success', `成功上传 ${result.count} 条城市数据`)
         await loadData() // 重新加载数据
       } else {
+        console.error('上传失败:', result.error)
         showMessage('error', `上传失败：${result.error}`)
       }
     } catch (error) {
+      console.error('处理文件时出错:', error)
       showMessage('error', error instanceof Error ? error.message : '上传失败')
     } finally {
       setIsLoading(false)
@@ -73,25 +82,34 @@ export default function UploadPage() {
     setMessage(null)
 
     try {
+      console.log('开始处理工资文件:', file.name)
+
       // 解析Excel文件
       const data = await parseSalariesExcel(file)
+      console.log('解析到的数据:', data)
 
       // 验证数据
       const validation = validateSalaryData(data)
       if (!validation.isValid) {
+        console.error('数据验证失败:', validation.errors)
         showMessage('error', `数据验证失败：\n${validation.errors.join('\n')}`)
         return
       }
 
       // 上传数据
+      console.log('开始上传数据，条数:', data.length)
       const result = await uploadSalariesData(data)
+      console.log('上传结果:', result)
+
       if (result.success) {
         showMessage('success', `成功上传 ${result.count} 条工资数据`)
         await loadData() // 重新加载数据
       } else {
+        console.error('上传失败:', result.error)
         showMessage('error', `上传失败：${result.error}`)
       }
     } catch (error) {
+      console.error('处理文件时出错:', error)
       showMessage('error', error instanceof Error ? error.message : '上传失败')
     } finally {
       setIsLoading(false)
@@ -174,6 +192,7 @@ export default function UploadPage() {
                 accept=".xlsx"
                 title={isLoading ? "正在处理..." : "点击上传或拖拽文件到此处"}
                 description="支持 .xlsx 格式"
+                id="cities-file-upload"
               />
               <div className="bg-blue-50 p-4 rounded">
                 <p className="text-sm text-blue-800">
@@ -206,6 +225,7 @@ export default function UploadPage() {
                 accept=".xlsx"
                 title={isLoading ? "正在处理..." : "点击上传或拖拽文件到此处"}
                 description="支持 .xlsx 格式"
+                id="salaries-file-upload"
               />
               <div className="bg-blue-50 p-4 rounded">
                 <p className="text-sm text-blue-800">

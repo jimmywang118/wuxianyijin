@@ -8,6 +8,7 @@ interface FileUploadProps {
   title: string
   description: string
   icon?: React.ReactNode
+  id?: string
 }
 
 export default function FileUpload({
@@ -15,7 +16,8 @@ export default function FileUpload({
   accept = '.xlsx',
   title,
   description,
-  icon
+  icon,
+  id = 'file-upload'
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -38,6 +40,7 @@ export default function FileUpload({
 
     const files = e.dataTransfer.files
     if (files && files[0]) {
+      console.log('文件拖拽:', files[0].name)
       onFileSelect(files[0])
     }
   }, [onFileSelect])
@@ -45,6 +48,7 @@ export default function FileUpload({
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files[0]) {
+      console.log('文件选择:', files[0].name)
       onFileSelect(files[0])
     }
   }, [onFileSelect])
