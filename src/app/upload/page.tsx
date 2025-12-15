@@ -23,14 +23,23 @@ export default function UploadPage() {
 
   const loadData = async () => {
     try {
+      console.log('开始加载数据...')
       const citiesResult = await getCitiesList()
+      console.log('城市数据结果:', citiesResult)
       if (citiesResult.success) {
         setCities(citiesResult.data)
+        console.log('加载了', citiesResult.data.length, '个城市')
+      } else {
+        console.error('加载城市数据失败:', citiesResult.error)
       }
 
       const salariesResult = await getSalariesCount()
+      console.log('工资数据结果:', salariesResult)
       if (salariesResult.success) {
         setSalariesCount(salariesResult.count)
+        console.log('工资数据条数:', salariesResult.count)
+      } else {
+        console.error('加载工资数据失败:', salariesResult.error)
       }
     } catch (error) {
       console.error('加载数据失败:', error)
@@ -193,6 +202,25 @@ export default function UploadPage() {
               : 'bg-red-50 text-red-800 border border-red-200'
           }`}>
             <p className="text-sm whitespace-pre-line">{message.text}</p>
+          </div>
+        )}
+
+        {/* Debug Info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-sm text-yellow-800">
+              调试信息：
+              <br />- 城市数据：{cities.length} 条
+              <br />- 工资数据：{salariesCount ?? 0} 条
+              <br />- SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '已配置' : '未配置'}
+              <br />- SERVICE_ROLE_KEY: {process.env.SUPABASE_SERVICE_ROLE_KEY ? '已配置' : '未配置'}
+            </p>
+            <button
+              onClick={loadData}
+              className="mt-2 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+            >
+              重新加载数据
+            </button>
           </div>
         )}
 
