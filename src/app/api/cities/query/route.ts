@@ -6,12 +6,16 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { cityName: string } }
-) {
+export async function POST(request: NextRequest) {
   try {
-    const cityName = params.cityName
+    const { cityName } = await request.json()
+
+    if (!cityName) {
+      return NextResponse.json(
+        { success: false, error: '城市名称不能为空' },
+        { status: 400 }
+      )
+    }
 
     const { data, error } = await supabaseAdmin
       .from('cities')
@@ -28,7 +32,10 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(data || [])
+    return NextResponse.json({
+      success: true,
+      data: data || []
+    })
   } catch (error) {
     console.error('获取城市数据出错:', error)
     return NextResponse.json(

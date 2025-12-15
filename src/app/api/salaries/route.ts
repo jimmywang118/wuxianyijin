@@ -29,3 +29,16 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    // 这个POST方法可能不需要，但保留以备将来使用
+    return GET(request)
+  } catch (error) {
+    console.error('获取工资数据出错:', error)
+    return NextResponse.json(
+      { success: false, error: '服务器内部错误' },
+      { status: 500 }
+    )
+  }
+}

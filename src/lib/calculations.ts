@@ -23,17 +23,24 @@ export async function calculateContributions(cityName: string): Promise<{
 
   try {
     // 2. 获取城市社保标准
-    const cityResponse = await fetch(`/api/cities/${encodeURIComponent(cityName)}`)
+    const cityResponse = await fetch('/api/cities/query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cityName }),
+    })
+
     if (!cityResponse.ok) {
       throw new Error('获取城市数据失败')
     }
-    const cityData = await cityResponse.json()
+    const cityResult = await cityResponse.json()
 
-    if (!cityData || cityData.length === 0) {
+    if (!cityResult.success || !cityResult.data || cityResult.data.length === 0) {
       throw new Error(`未找到城市 ${cityName} 的社保标准数据`)
     }
 
-    const cityStandard = cityData[0] // 取第一条数据
+    const cityStandard = cityResult.data[0] // 取第一条数据
 
     // 3. 获取所有工资数据
     const salariesResponse = await fetch('/api/salaries')
