@@ -49,9 +49,53 @@ export async function parseSalariesExcel(file: File): Promise<SalaryData[]> {
         const workbook = XLSX.read(data, { type: 'array' })
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as SalaryData[]
 
-        resolve(jsonData)
+        // 使用 raw: false 保留数据格式，但会进行一些转换
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false }) as any[]
+
+        // 打印原始数据以调试
+        console.log('Excel原始数据（前3条）:', jsonData.slice(0, 3))
+
+        // 数据预处理：确保正确的数据格式
+        const processedData = jsonData.map(row => {
+          // 处理月份字段：可能是数字（如 202401）或日期，需要转换为 YYYYMM 字符串
+          let month = row.month
+          if (month !== undefined && month !== null) {
+            // 如果是数字，确保是6位数
+            if (typeof month === 'number') {
+              month = month.toString().padStart(6, '0')
+            }
+            // 如果是日期，转换为 YYYYMM
+            else if (month instanceof Date) {
+              const year = month.getFullYear()
+              const m = (month.getMonth() + 1).toString().padStart(2, '0')
+              month = `${year}${m}`
+            }
+            // 如果是字符串，去除可能的空格
+            else if (typeof month === 'string') {
+              month = month.trim().padStart(6, '0')
+            }
+          }
+
+          // 处理工资金额：确保是数字
+          let salaryAmount = row.salary_amount
+          if (typeof salaryAmount === 'string') {
+            // 移除可能的逗号和空格
+            salaryAmount = parseFloat(salaryAmount.replace(/[,，\s]/g, ''))
+          }
+
+          return {
+            employee_id: row.employee_id,
+            employee_name: row.employee_name,
+            month: month,
+            salary_amount: salaryAmount
+          }
+        })
+
+        // 打印处理后的数据以调试
+        console.log('处理后的数据（前3条）:', processedData.slice(0, 3))
+
+        resolve(processedData)
       } catch (error) {
         reject(new Error('解析工资数据文件失败: ' + error))
       }
@@ -107,31 +151,51 @@ export function validateSalaryData(data: SalaryData[]): { isValid: boolean; erro
     return { isValid: false, errors }
   }
 
+  // 只显示前5个错误，避免错误信息过多
+  const maxErrors = 5
+
   data.forEach((row, index) => {
+    if (errors.length >= maxErrors) return
+
     const rowNum = index + 2 // Excel行号从2开始
 
-    if (!row.employee_id || typeof row.employee_id !== 'string') {
-      errors.push(`第${rowNum}行: 员工工号缺失或格式错误`)
+    // 检查工号
+    if (!row.employee_id || row.employee_id === '') {
+      errors.push(`第${rowNum}行: 员工工号缺失`)
+      return
     }
 
-    if (!row.employee_name || typeof row.employee_name !== 'string') {
-      errors.push(`第${rowNum}行: 员工姓名缺失或格式错误`)
+    // 检查姓名
+    if (!row.employee_name || row.employee_name === '') {
+      errors.push(`第${rowNum}行: 员工姓名缺失`)
+      return
     }
 
-    if (!row.month || typeof row.month !== 'string') {
-      errors.push(`第${rowNum}行: 月份缺失或格式错误`)
+    // 检查月份
+    if (!row.month && row.month !== 0) {
+      errors.push(`第${rowNum}行: 月份缺失`)
+      return
     }
 
     // 验证月份格式 YYYYMM
+    const monthStr = row.month.toString()
     const monthPattern = /^\d{4}(0[1-9]|1[0-2])$/
-    if (row.month && !monthPattern.test(row.month)) {
-      errors.push(`第${rowNum}行: 月份格式应为YYYYMM，如202401`)
+    if (!monthPattern.test(monthStr)) {
+      errors.push(`第${rowNum}行: 月份格式错误（${monthStr}），应为YYYYMM格式，如202401`)
+      return
     }
 
-    if (typeof row.salary_amount !== 'number' || row.salary_amount <= 0) {
-      errors.push(`第${rowNum}行: 工资金额必须是正数`)
+    // 检查工资金额
+    const salary = parseFloat(row.salary_amount as any)
+    if (isNaN(salary) || salary <= 0) {
+      errors.push(`第${rowNum}行: 工资金额必须是正数（当前值：${row.salary_amount}）`)
     }
   })
+
+  // 如果有更多错误，添加提示
+  if (data.length > maxErrors && errors.length >= maxErrors) {
+    errors.push(`...（还有更多错误，请检查数据格式）`)
+  }
 
   return { isValid: errors.length === 0, errors }
 }
