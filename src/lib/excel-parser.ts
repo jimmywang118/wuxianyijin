@@ -279,7 +279,7 @@ export function validateSalaryData(data: SalaryData[]): { isValid: boolean; erro
     }
 
     // 检查月份
-    if (!row.month && row.month !== 0) {
+    if (!row.month) {
       errors.push(`第${rowNum}行: 月份缺失`)
       return
     }
@@ -293,7 +293,7 @@ export function validateSalaryData(data: SalaryData[]): { isValid: boolean; erro
     }
 
     // 检查工资金额
-    const salary = parseFloat(row.salary_amount as any)
+    const salary = parseFloat(String(row.salary_amount || '0'))
     if (isNaN(salary) || salary <= 0) {
       errors.push(`第${rowNum}行: 工资金额必须是正数（当前值：${row.salary_amount}）`)
     }
