@@ -210,7 +210,7 @@ export function validateCityData(data: CityData[]): { isValid: boolean; errors: 
       trim后: cityName ? cityName.trim() : '',
       是否为空: !cityName,
       是否不是字符串: typeof cityName !== 'string',
-      trim后是否为空: cityName.trim() === ''
+      trim后是否为空: cityName ? cityName.trim() === '' : 'N/A'
     })
 
     if (!cityName || typeof cityName !== 'string' || cityName.trim() === '') {
