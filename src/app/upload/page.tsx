@@ -2,15 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import FileUpload from '@/components/FileUpload'
 import { parseCitiesExcel, parseSalariesExcel, validateCityData, validateSalaryData } from '@/lib/excel-parser'
 import { uploadCitiesData, uploadSalariesData, getCitiesList, getSalariesCount } from '@/lib/data-service'
 
 export default function UploadPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'cities' | 'salaries'>('cities')
   const [cities, setCities] = useState<any[]>([])
   const [salariesCount, setSalariesCount] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isCalculating, setIsCalculating] = useState(false)
+  const [selectedCity, setSelectedCity] = useState('')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -113,6 +117,59 @@ export default function UploadPage() {
       showMessage('error', error instanceof Error ? error.message : '上传失败')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleCalculate = async () => {
+    if (!selectedCity) {
+      showMessage('error', '请选择要计算的城市')
+      return
+    }
+
+    if (cities.length === 0) {
+      showMessage('error', '请先上传城市数据')
+      return
+    }
+
+    if (salariesCount === 0 || salariesCount === null) {
+      showMessage('error', '请先上传工资数据')
+      return
+    }
+
+    setIsCalculating(true)
+    setMessage(null)
+
+    try {
+      console.log('开始计算:', selectedCity)
+
+      const response = await fetch('/api/calculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cityName: selectedCity }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || '计算失败')
+      }
+
+      console.log('计算结果:', result)
+
+      showMessage('success', `计算完成！共计算 ${result.batchInfo.totalEmployees} 名员工，公司总费用：¥${result.batchInfo.totalCompanyFee.toFixed(2)}`)
+
+      // 计算成功后跳转到结果页面
+      setTimeout(() => {
+        router.push('/results')
+      }, 2000)
+
+    } catch (error) {
+      console.error('计算失败:', error)
+      showMessage('error', error instanceof Error ? error.message : '计算失败')
+    } finally {
+      setIsCalculating(false)
     }
   }
 
@@ -248,7 +305,11 @@ export default function UploadPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 选择城市
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <select
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
                 {cities.length > 0 ? (
                   <>
                     <option value="">请选择城市</option>
@@ -264,10 +325,12 @@ export default function UploadPage() {
               </select>
             </div>
             <button
-              disabled={cities.length === 0 || salariesCount === 0}
+              onClick={handleCalculate}
+              disabled={cities.length === 0 || salariesCount === 0 || isCalculating}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
             >
-              {cities.length === 0 ? '请先上传城市数据' :
+              {isCalculating ? '正在计算...' :
+               cities.length === 0 ? '请先上传城市数据' :
                salariesCount === 0 ? '请先上传工资数据' :
                '执行计算'}
             </button>
